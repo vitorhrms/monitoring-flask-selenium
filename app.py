@@ -48,7 +48,7 @@ def index():
 
         return render_template("index.html", status_dict=status_dict)
     
-    return render_template("index.html", urls=None, status_dict=None)
+    return render_template("index.html", status_dict=None)
 
 @app.route("/check_status", methods=["POST"])
 def check_status():
@@ -62,4 +62,4 @@ def check_status():
     return jsonify(status=status)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    app.run(host='0.0.0.0', port=3000)
