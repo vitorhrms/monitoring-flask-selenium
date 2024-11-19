@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento de Sites</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Monitoramento de Sites</h1>
+
+        <form action="/" method="POST">
+            <input type="text" name="urls" rows="6" cols="50" placeholder="Digite as URLs para monitoramento..."></input><br><br>
+            <button type="submit">Monitorar</button>
+        </form>
+
+        {% if status_dict %}
+        <h2>Status das URLs</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Última Verificação</th>
+                    <th>Evidência</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for url, data in status_dict.items() %}
+                <tr>
+                    <td title="{{ url }}">{{ url }}</td>
+                    <td>{{ data['status'] }}</td>
+                    <td>{{ data['last_verify'] }}</td>
+                    <td class="open-img-td">
+                        {% if data['evidence'] %}
+                        <button 
+                            class="open-img-btn" 
+                            onclick="openImage(event)" 
+                            data-url="{{ url }}" 
+                            data-base64="{{ data['evidence'] }}" 
+                            data-last-verify="{{ data['last_verify'] }}"
+                        >
+                        </button>
+                        {% endif %}
+                    </td>
+                    <td><button class="check-status-btn" onclick="checkStatus(event)" data-url="{{ url }}">Verificar Status</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <script>
+        const checkStatus = (event) => {
+            const buttons = document.querySelectorAll(".check-status-btn");
+            const url = event.target.getAttribute("data-url");
+            event.target.innerHTML = "Verificando...";
+            buttons.forEach(button => {
+                button.disabled = true;
+            });
+            
+            fetch("/check_status", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "url=" + encodeURIComponent(url)
+            })
+            .then(response => response.json())
+            .then(response => location.reload())
+            .catch(error => {
+                console.error('Erro ao verificar status:', error);
+                buttons.forEach(button => {
+                    button.innerHTML = "Verificar Status";
+                    button.disabled = true;
+                });
+            });
+        };
+        const openImage = (event) => {
+            const url = event.target.getAttribute("data-url");
+            const date = event.target.getAttribute("data-last-verify");
+            const base64 = event.target.getAttribute("data-base64");
+            const imageWindow = window.open("", "_blank");
+
+            imageWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Imagem em Base64</title>
+                </head>
+                <body>
+                    <h1>${url} - ${date}</h1>
+                    <button onclick="window.close()">Fechar</button>  <!-- Botão para fechar a janela -->
+                    <br><br>
+                    <img src="data:image/png;base64,${base64}" alt="Imagem Base64" />
+                </body>
+                </html>
+            `);
+        };
+    </script>
+</body>
+</html>
